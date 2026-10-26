@@ -1,64 +1,40 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 
-import 'repositories/persistent_author_repository.dart';
-import 'repositories/persistent_book_repository.dart';
-import 'repositories/persistent_genre_repository.dart';
-import 'repositories/persistent_publisher_repository.dart';
-import 'repositories/persistent_reader_repository.dart';
+import 'core/api_client.dart';
+import 'core/auth_session.dart';
+import 'core/config.dart';
+import 'repositories/api_author_repository.dart';
+import 'repositories/api_book_repository.dart';
+import 'repositories/api_genre_repository.dart';
+import 'repositories/api_loan_repository.dart';
+import 'repositories/api_publisher_repository.dart';
+import 'repositories/api_reader_repository.dart';
 
 class AppRepositories {
-  AppRepositories(
-    SharedPreferences prefs, {
-    Duration delay = const Duration(milliseconds: 250),
-    String failingSearch = '!error',
-  }) {
-    books = PersistentBookRepository(
-      prefs: prefs,
-      delay: delay,
-      failingSearch: failingSearch,
-    );
-    authors = PersistentAuthorRepository(
-      prefs: prefs,
-      books: books,
-      delay: delay,
-      failingSearch: failingSearch,
-    );
-    genres = PersistentGenreRepository(
-      prefs: prefs,
-      books: books,
-      delay: delay,
-      failingSearch: failingSearch,
-    );
-    publishers = PersistentPublisherRepository(
-      prefs: prefs,
-      books: books,
-      delay: delay,
-      failingSearch: failingSearch,
-    );
-    readers = PersistentReaderRepository(
-      prefs: prefs,
-      delay: delay,
-      failingSearch: failingSearch,
-    );
-
-    books.load();
-    authors.load();
-    genres.load();
-    publishers.load();
-    readers.load();
+  AppRepositories({required Dio dio}) {
+    books = ApiBookRepository(dio: dio);
+    authors = ApiAuthorRepository(dio: dio, books: books);
+    genres = ApiGenreRepository(dio: dio, books: books);
+    publishers = ApiPublisherRepository(dio: dio, books: books);
+    readers = ApiReaderRepository(dio: dio);
+    loans = ApiLoanRepository(dio: dio);
   }
 
-  late final PersistentBookRepository books;
-  late final PersistentAuthorRepository authors;
-  late final PersistentGenreRepository genres;
-  late final PersistentPublisherRepository publishers;
-  late final PersistentReaderRepository readers;
+  factory AppRepositories.connect({Map<String, String> debugFlags = const {}}) {
+    final session = AuthSession(
+      username: apiUser,
+      password: apiPassword,
+      client: buildLoginDio(),
+    );
+    return AppRepositories(
+      dio: buildDio(session: session, debugFlags: debugFlags),
+    );
+  }
 
-  List<String> get notices => [
-        ?books.restoreNotice,
-        ?authors.restoreNotice,
-        ?genres.restoreNotice,
-        ?publishers.restoreNotice,
-        ?readers.restoreNotice,
-      ];
+  late final ApiBookRepository books;
+  late final ApiAuthorRepository authors;
+  late final ApiGenreRepository genres;
+  late final ApiPublisherRepository publishers;
+  late final ApiReaderRepository readers;
+  late final ApiLoanRepository loans;
 }

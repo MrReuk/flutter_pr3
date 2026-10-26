@@ -10,6 +10,7 @@ class BookQuery {
   final int? publisherId;
   final int? yearFrom;
   final int? yearTo;
+  final bool onlyAvailable;
   final String sortField;
   final bool sortAscending;
   final int page;
@@ -22,6 +23,7 @@ class BookQuery {
     this.publisherId,
     this.yearFrom,
     this.yearTo,
+    this.onlyAvailable = false,
     this.sortField = 'title',
     this.sortAscending = true,
     this.page = 1,
@@ -37,6 +39,7 @@ class BookQuery {
       publisherId: parseIntParam(params['publisherId']),
       yearFrom: parseIntParam(params['yearFrom']),
       yearTo: parseIntParam(params['yearTo']),
+      onlyAvailable: params['available'] == '1',
       sortField: sort.field,
       sortAscending: sort.ascending,
       page: parsePageParam(params['page']),
@@ -47,7 +50,9 @@ class BookQuery {
 
   int get activeFilterCount {
     final values = [genreId, publisherId, yearFrom, yearTo];
-    return values.where((v) => v != null).length + (includeDeleted ? 1 : 0);
+    return values.where((v) => v != null).length +
+        (onlyAvailable ? 1 : 0) +
+        (includeDeleted ? 1 : 0);
   }
 
   Map<String, String> toParams() {
@@ -57,6 +62,7 @@ class BookQuery {
       if (publisherId != null) 'publisherId': '$publisherId',
       if (yearFrom != null) 'yearFrom': '$yearFrom',
       if (yearTo != null) 'yearTo': '$yearTo',
+      if (onlyAvailable) 'available': '1',
       if (sortField != 'title' || !sortAscending)
         'sort': formatSortParam(sortField, sortAscending),
       if (page > 1) 'page': '$page',
@@ -79,6 +85,7 @@ class BookQuery {
     Object? publisherId = _unset,
     Object? yearFrom = _unset,
     Object? yearTo = _unset,
+    bool? onlyAvailable,
     String? sortField,
     bool? sortAscending,
     int? page,
@@ -92,6 +99,7 @@ class BookQuery {
           identical(publisherId, _unset) ? this.publisherId : publisherId as int?,
       yearFrom: identical(yearFrom, _unset) ? this.yearFrom : yearFrom as int?,
       yearTo: identical(yearTo, _unset) ? this.yearTo : yearTo as int?,
+      onlyAvailable: onlyAvailable ?? this.onlyAvailable,
       sortField: sortField ?? this.sortField,
       sortAscending: sortAscending ?? this.sortAscending,
       page: page ?? 1,
@@ -109,6 +117,7 @@ class BookQuery {
           other.publisherId == publisherId &&
           other.yearFrom == yearFrom &&
           other.yearTo == yearTo &&
+          other.onlyAvailable == onlyAvailable &&
           other.sortField == sortField &&
           other.sortAscending == sortAscending &&
           other.page == page &&
@@ -122,6 +131,7 @@ class BookQuery {
         publisherId,
         yearFrom,
         yearTo,
+        onlyAvailable,
         sortField,
         sortAscending,
         page,

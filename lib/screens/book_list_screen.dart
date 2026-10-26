@@ -86,8 +86,15 @@ class _BookListScreenState extends State<BookListScreen> {
     if (!confirmed) return;
     final summary = await notifier.deleteSelected();
     if (mounted) context.read<ReferenceNotifier>().load();
+    final failure = summary.error;
     messenger.showSnackBar(
-      SnackBar(content: Text('Удалено записей: ${summary.deleted}')),
+      SnackBar(
+        content: Text(
+          failure != null
+              ? 'Не удалось удалить записи: $failure'
+              : 'Удалено записей: ${summary.deleted}',
+        ),
+      ),
     );
   }
 
@@ -158,6 +165,18 @@ class _BookListScreenState extends State<BookListScreen> {
                     isDense: true,
                   ),
                 ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Switch(
+                    value: q.onlyAvailable,
+                    onChanged: (value) =>
+                        _go(_query.copyWith(onlyAvailable: value)),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('Только доступные'),
+                ],
               ),
               DeletedSwitch(
                 value: q.includeDeleted,

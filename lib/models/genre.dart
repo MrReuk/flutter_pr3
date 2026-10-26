@@ -23,10 +23,8 @@ class Genre {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'name': name,
         'description': description,
-        'deletedAt': deletedAt?.toIso8601String(),
       };
 
   bool get isDeleted => deletedAt != null;

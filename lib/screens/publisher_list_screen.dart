@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../models/publisher.dart';
 import '../models/simple_query.dart';
-import '../state/reference_notifier.dart';
-import '../widgets/choice_dropdown.dart';
 import '../widgets/entity_table.dart';
 import 'simple_list_screen.dart';
 
@@ -20,22 +17,9 @@ class PublisherListScreen extends StatelessWidget {
       config: SimpleListConfig<Publisher>(
         title: 'Издательства',
         path: '/publishers',
-        searchLabel: 'Поиск по названию, стране или почте',
+        searchLabel: 'Поиск по названию или городу',
         emptyMessage: 'Издательства не найдены. Измените поиск или фильтры.',
         addLabel: 'Добавить издательство',
-        filterBuilder: (context, q, apply) {
-          final countries = context.watch<ReferenceNotifier>().countries;
-          return [
-            ChoiceDropdown(
-              label: 'Страна',
-              value: q.filter,
-              choices: [
-                for (final country in countries) (value: country, label: country),
-              ],
-              onChanged: (value) => apply(q.copyWith(filter: value)),
-            ),
-          ];
-        },
         columns: (context) => [
           TableColumnSpec<Publisher>(
             label: 'Название',
@@ -43,25 +27,24 @@ class PublisherListScreen extends StatelessWidget {
             build: (p) => Text(p.name),
           ),
           TableColumnSpec<Publisher>(
-            label: 'Страна',
-            sortField: 'country',
-            build: (p) => Text(p.country),
+            label: 'Город',
+            sortField: 'city',
+            build: (p) => Text(p.city.isEmpty ? '—' : p.city),
           ),
           TableColumnSpec<Publisher>(
             label: 'Год основания',
             sortField: 'foundedYear',
             numeric: true,
-            build: (p) => Text('${p.foundedYear}'),
-          ),
-          TableColumnSpec<Publisher>(
-            label: 'Почта',
-            build: (p) => Text(p.email),
+            build: (p) => Text(p.foundedYear == null ? '—' : '${p.foundedYear}'),
           ),
         ],
         idOf: (p) => p.id,
         isDeleted: (p) => p.isDeleted,
         nameOf: (p) => p.name,
-        subtitleOf: (p) => '${p.country} · основано в ${p.foundedYear} г.\n${p.email}',
+        subtitleOf: (p) => [
+          if (p.city.isNotEmpty) p.city,
+          if (p.foundedYear != null) 'основано в ${p.foundedYear} г.',
+        ].join(' · '),
       ),
     );
   }

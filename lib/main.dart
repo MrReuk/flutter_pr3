@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'app_repositories.dart';
+import 'core/debug_flags.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
-  final prefs = await SharedPreferences.getInstance();
-  runApp(LibraryApp(repositories: AppRepositories(prefs)));
+  runApp(
+    LibraryApp(
+      repositories: AppRepositories.connect(debugFlags: readDebugFlags(Uri.base)),
+    ),
+  );
 }

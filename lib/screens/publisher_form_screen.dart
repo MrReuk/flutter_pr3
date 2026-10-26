@@ -24,11 +24,13 @@ class PublisherFormScreen extends StatelessWidget {
       notFoundMessage: 'Издательство не найдено',
       savedMessage: id == null ? 'Издательство добавлено' : 'Изменения сохранены',
       loadItem: id == null ? null : () => publishers.findById(id),
-      initialValues: (publisher) => {
-        'name': publisher?.name ?? '',
-        'country': publisher?.country ?? '',
-        'foundedYear': publisher == null ? '' : '${publisher.foundedYear}',
-        'email': publisher?.email ?? '',
+      initialValues: (publisher) {
+        final year = publisher?.foundedYear;
+        return {
+          'name': publisher?.name ?? '',
+          'city': publisher?.city ?? '',
+          'foundedYear': year == null ? '' : '$year',
+        };
       },
       fields: (publisher) => [
         FieldSpec.text(
@@ -39,40 +41,26 @@ class PublisherFormScreen extends StatelessWidget {
           validator: checks([notBlank(), minLength(2), maxLength(80)]),
         ),
         FieldSpec.text(
-          key: 'country',
-          label: 'Страна',
-          required: true,
+          key: 'city',
+          label: 'Город',
           maxLength: 60,
-          validator: checks([notBlank(), minLength(2), maxLength(60), namePattern()]),
+          validator: checks([maxLength(60), namePattern()]),
         ),
         FieldSpec.text(
           key: 'foundedYear',
           label: 'Год основания',
-          required: true,
           keyboardType: TextInputType.number,
           formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9-]'))],
-          validator: checks([
-            notBlank(),
-            integerInRange(1450, DateTime.now().year),
-          ]),
-        ),
-        FieldSpec.text(
-          key: 'email',
-          label: 'Электронная почта',
-          required: true,
-          hint: 'info@example.com',
-          keyboardType: TextInputType.emailAddress,
-          maxLength: 100,
-          validator: checks([notBlank(), maxLength(100), emailFormat()]),
+          validator: checks([integerInRange(1400, DateTime.now().year)]),
         ),
       ],
       save: (values, existing) async {
+        final year = (values['foundedYear'] as String).trim();
         final draft = Publisher(
           id: existing?.id ?? 0,
           name: (values['name'] as String).trim(),
-          country: (values['country'] as String).trim(),
-          foundedYear: int.parse((values['foundedYear'] as String).trim()),
-          email: (values['email'] as String).trim(),
+          city: (values['city'] as String).trim(),
+          foundedYear: year.isEmpty ? null : int.parse(year),
           deletedAt: existing?.deletedAt,
         );
         if (existing == null) {

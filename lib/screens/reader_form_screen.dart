@@ -16,7 +16,6 @@ class ReaderFormScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final readers = context.read<ReaderRepository>();
     final id = readerId;
-    final today = DateTime.now();
 
     return EntityFormScreen<Reader>(
       title: id == null ? 'Новый читатель' : 'Редактирование читателя',
@@ -25,30 +24,18 @@ class ReaderFormScreen extends StatelessWidget {
       savedMessage: id == null ? 'Читатель добавлен' : 'Изменения сохранены',
       loadItem: id == null ? null : () => readers.findById(id),
       initialValues: (reader) => {
-        'lastName': reader?.lastName ?? '',
-        'firstName': reader?.firstName ?? '',
+        'fullName': reader?.fullName ?? '',
         'email': reader?.email ?? '',
         'phone': reader?.phone ?? '',
-        'cardNumber': reader?.card.number ?? '',
-        'cardIssuedAt': formatRuDate(reader?.card.issuedAt ?? today),
-        'cardExpiresAt': reader == null
-            ? formatRuDate(DateTime(today.year + 1, today.month, today.day))
-            : formatRuDate(reader.card.expiresAt),
       },
       fields: (reader) => [
         FieldSpec.text(
-          key: 'lastName',
-          label: 'Фамилия',
+          key: 'fullName',
+          label: 'ФИО',
           required: true,
-          maxLength: 50,
-          validator: checks([notBlank(), minLength(2), maxLength(50), namePattern()]),
-        ),
-        FieldSpec.text(
-          key: 'firstName',
-          label: 'Имя',
-          required: true,
-          maxLength: 50,
-          validator: checks([notBlank(), minLength(2), maxLength(50), namePattern()]),
+          hint: 'Смирнов П. А.',
+          maxLength: 100,
+          validator: checks([notBlank(), minLength(2), maxLength(100), namePattern()]),
         ),
         FieldSpec.text(
           key: 'email',
@@ -66,49 +53,14 @@ class ReaderFormScreen extends StatelessWidget {
           keyboardType: TextInputType.phone,
           validator: checks([phoneFormat()]),
         ),
-        FieldSpec.group(
-          title: 'Читательский билет',
-          fields: [
-            FieldSpec.text(
-              key: 'cardNumber',
-              label: 'Номер билета',
-              required: true,
-              hint: 'LC-2025-011',
-              validator: checks([notBlank(), cardNumberFormat()]),
-            ),
-            FieldSpec.text(
-              key: 'cardIssuedAt',
-              label: 'Дата выдачи',
-              required: true,
-              hint: 'дд.мм.гггг',
-              isDate: true,
-              validator: checks([notBlank(), dateFormat()]),
-            ),
-            FieldSpec.text(
-              key: 'cardExpiresAt',
-              label: 'Действует до',
-              required: true,
-              hint: 'дд.мм.гггг',
-              isDate: true,
-              validator: (value, values) =>
-                  checks([notBlank(), dateFormat()])(value, values) ??
-                  expiryAfterIssueCheck(value, values),
-            ),
-          ],
-        ),
       ],
       save: (values, existing) async {
         final draft = Reader(
           id: existing?.id ?? 0,
-          lastName: (values['lastName'] as String).trim(),
-          firstName: (values['firstName'] as String).trim(),
+          fullName: (values['fullName'] as String).trim(),
           email: (values['email'] as String).trim(),
           phone: (values['phone'] as String).trim(),
-          card: LibraryCard(
-            number: (values['cardNumber'] as String).trim(),
-            issuedAt: parseRuDate(values['cardIssuedAt'] as String)!,
-            expiresAt: parseRuDate(values['cardExpiresAt'] as String)!,
-          ),
+          card: existing?.card,
           deletedAt: existing?.deletedAt,
         );
         if (existing == null) {

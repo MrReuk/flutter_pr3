@@ -82,8 +82,15 @@ class _AuthorListScreenState extends State<AuthorListScreen> {
     if (!confirmed) return;
     final summary = await notifier.deleteSelected();
     if (mounted) context.read<ReferenceNotifier>().load();
+    final failure = summary.error;
     messenger.showSnackBar(
-      SnackBar(content: Text('Удалено записей: ${summary.deleted}')),
+      SnackBar(
+        content: Text(
+          failure != null
+              ? 'Не удалось удалить записи: $failure'
+              : 'Удалено записей: ${summary.deleted}',
+        ),
+      ),
     );
   }
 
@@ -98,7 +105,7 @@ class _AuthorListScreenState extends State<AuthorListScreen> {
         children: [
           ListToolbar(
             search: q.search,
-            searchLabel: 'Поиск по фамилии или стране',
+            searchLabel: 'Поиск по имени или стране',
             onSearch: (text) => _go(_query.copyWith(search: text)),
             activeFilterCount: q.activeFilterCount,
             initiallyOpen: q.activeFilterCount > 0,
@@ -130,24 +137,20 @@ class _AuthorListScreenState extends State<AuthorListScreen> {
                   : null,
               columns: [
                 TableColumnSpec<Author>(
-                  label: 'Фамилия',
-                  sortField: 'lastName',
-                  build: (a) => Text(a.lastName),
-                ),
-                TableColumnSpec<Author>(
-                  label: 'Имя',
-                  build: (a) => Text(a.firstName),
+                  label: 'ФИО',
+                  sortField: 'fullName',
+                  build: (a) => Text(a.fullName),
                 ),
                 TableColumnSpec<Author>(
                   label: 'Страна',
                   sortField: 'country',
-                  build: (a) => Text(a.country),
+                  build: (a) => Text(a.country.isEmpty ? '—' : a.country),
                 ),
                 TableColumnSpec<Author>(
                   label: 'Год рождения',
                   sortField: 'birthYear',
                   numeric: true,
-                  build: (a) => Text('${a.birthYear}'),
+                  build: (a) => Text(a.birthYear == null ? '—' : '${a.birthYear}'),
                 ),
               ],
               idOf: (a) => a.id,
@@ -175,7 +178,10 @@ class _AuthorListScreenState extends State<AuthorListScreen> {
                 onRestore: () => _afterChange(() => notifier.restore(a.id)),
               ),
               titleOf: (a) => a.fullName,
-              subtitleOf: (a) => '${a.country} · ${a.birthYear} г. рождения',
+              subtitleOf: (a) => [
+                if (a.country.isNotEmpty) a.country,
+                if (a.birthYear != null) '${a.birthYear} г. рождения',
+              ].join(' · '),
               onPage: (page) => _go(_query.copyWith(page: page)),
               onSize: (size) => _go(_query.copyWith(size: size)),
             ),

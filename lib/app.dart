@@ -8,6 +8,7 @@ import 'models/author_query.dart';
 import 'models/book.dart';
 import 'models/book_query.dart';
 import 'models/genre.dart';
+import 'models/loan.dart';
 import 'models/publisher.dart';
 import 'models/reader.dart';
 import 'models/simple_query.dart';
@@ -34,26 +35,6 @@ class LibraryApp extends StatefulWidget {
 
 class _LibraryAppState extends State<LibraryApp> {
   late final GoRouter _router = buildRouter(initialLocation: widget.initialLocation);
-  final GlobalKey<ScaffoldMessengerState> _messengerKey =
-      GlobalKey<ScaffoldMessengerState>();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final messenger = _messengerKey.currentState;
-      if (messenger == null) return;
-      for (final notice in widget.repositories.notices) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(notice),
-            duration: const Duration(seconds: 10),
-            showCloseIcon: true,
-          ),
-        );
-      }
-    });
-  }
 
   @override
   void dispose() {
@@ -72,6 +53,7 @@ class _LibraryAppState extends State<LibraryApp> {
         Provider<GenreRepository>.value(value: repos.genres),
         Provider<PublisherRepository>.value(value: repos.publishers),
         Provider<ReaderRepository>.value(value: repos.readers),
+        Provider<LoanRepository>.value(value: repos.loans),
         ChangeNotifierProvider<PagedListNotifier<Book, BookQuery>>(
           create: (_) => PagedListNotifier<Book, BookQuery>(
             initialQuery: const BookQuery(),
@@ -110,10 +92,20 @@ class _LibraryAppState extends State<LibraryApp> {
           create: (_) => PagedListNotifier<Reader, SimpleQuery>(
             initialQuery: SimpleQuery.initial(
               sortFields: kReaderSortFields,
-              defaultSort: 'lastName',
+              defaultSort: 'fullName',
             ),
             repository: repos.readers,
             idOf: (reader) => reader.id,
+          ),
+        ),
+        ChangeNotifierProvider<PagedListNotifier<Loan, SimpleQuery>>(
+          create: (_) => PagedListNotifier<Loan, SimpleQuery>(
+            initialQuery: SimpleQuery.initial(
+              sortFields: kLoanSortFields,
+              defaultSort: 'issuedAt',
+            ),
+            repository: repos.loans,
+            idOf: (loan) => loan.id,
           ),
         ),
         ChangeNotifierProvider<ReferenceNotifier>(
@@ -122,13 +114,13 @@ class _LibraryAppState extends State<LibraryApp> {
             publishers: repos.publishers,
             authors: repos.authors,
             books: repos.books,
+            readers: repos.readers,
           )..load(),
         ),
       ],
       child: MaterialApp.router(
         title: 'Библиотека',
         debugShowCheckedModeBanner: false,
-        scaffoldMessengerKey: _messengerKey,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
           useMaterial3: true,

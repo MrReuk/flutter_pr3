@@ -5,14 +5,14 @@ void main() {
   SimpleQuery parse(Map<String, String> params) => SimpleQuery.fromParams(
         params,
         sortFields: kReaderSortFields,
-        defaultSort: 'lastName',
+        defaultSort: 'fullName',
       );
 
   test('Параметры адреса разбираются в условия отбора', () {
     final q = parse({
       'search': 'иван',
       'filter': 'expired',
-      'sort': 'expiresAt,desc',
+      'sort': 'email,desc',
       'page': '2',
       'size': '25',
       'deleted': '1',
@@ -20,7 +20,7 @@ void main() {
 
     expect(q.search, 'иван');
     expect(q.filter, 'expired');
-    expect(q.sortField, 'expiresAt');
+    expect(q.sortField, 'email');
     expect(q.sortAscending, isFalse);
     expect(q.page, 2);
     expect(q.size, 25);
@@ -31,7 +31,7 @@ void main() {
   test('Неизвестная сортировка заменяется сортировкой по умолчанию', () {
     final q = parse({'sort': 'unknown,desc'});
 
-    expect(q.sortField, 'lastName');
+    expect(q.sortField, 'fullName');
   });
 
   test('Условия отбора переживают запись в адрес и чтение обратно', () {
@@ -45,7 +45,7 @@ void main() {
   test('Значения по умолчанию не попадают в адрес', () {
     final q = SimpleQuery.initial(
       sortFields: kReaderSortFields,
-      defaultSort: 'lastName',
+      defaultSort: 'fullName',
     );
 
     expect(q.toLocation('/readers'), '/readers');

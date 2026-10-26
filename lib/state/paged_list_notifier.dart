@@ -5,7 +5,7 @@ import '../repositories/entity_repository.dart';
 import '../repositories/repository_exception.dart';
 import 'load_status.dart';
 
-typedef DeleteSummary = ({int requested, int deleted});
+typedef DeleteSummary = ({int requested, int deleted, String? error});
 
 String describeError(Object error) {
   return error is RepositoryException ? error.message : '$error';
@@ -96,10 +96,11 @@ class PagedListNotifier<T, Q> extends ChangeNotifier {
       final count = await _repository.deleteMany(ids);
       _selected.clear();
       await load();
-      return (requested: ids.length, deleted: count);
-    } catch (_) {
+      return (requested: ids.length, deleted: count, error: null);
+    } catch (e) {
+      final message = describeError(e);
       await load();
-      return (requested: ids.length, deleted: 0);
+      return (requested: ids.length, deleted: 0, error: message);
     }
   }
 

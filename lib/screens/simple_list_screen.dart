@@ -32,6 +32,10 @@ class SimpleListConfig<T> {
     required this.nameOf,
     required this.subtitleOf,
     this.filterBuilder,
+    this.searchable = true,
+    this.editable = true,
+    this.openable = true,
+    this.extraActions,
   });
 
   final String title;
@@ -45,6 +49,14 @@ class SimpleListConfig<T> {
   final String Function(T item) nameOf;
   final String Function(T item) subtitleOf;
   final FilterBuilder? filterBuilder;
+  final bool searchable;
+  final bool editable;
+  final bool openable;
+  final List<Widget> Function(
+    BuildContext context,
+    T item,
+    Future<void> Function() reload,
+  )? extraActions;
 }
 
 class SimpleListScreen<T> extends StatefulWidget {
@@ -113,12 +125,15 @@ class _SimpleListScreenState<T> extends State<SimpleListScreen<T>> {
     final summary = await notifier.deleteSelected();
     if (mounted) context.read<ReferenceNotifier>().load();
     final skipped = summary.requested - summary.deleted;
+    final failure = summary.error;
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          skipped > 0
-              ? 'Удалено записей: ${summary.deleted} из ${summary.requested}. Остальные нельзя удалить: с ними связаны другие записи.'
-              : 'Удалено записей: ${summary.deleted}',
+          failure != null
+              ? 'Не удалось удалить записи: $failure'
+              : skipped > 0
+                  ? 'Удалено записей: ${summary.deleted} из ${summary.requested}. Остальные нельзя удалить: с ними связаны другие записи.'
+                  : 'Удалено записей: ${summary.deleted}',
         ),
       ),
     );
@@ -137,6 +152,7 @@ class _SimpleListScreenState<T> extends State<SimpleListScreen<T>> {
           ListToolbar(
             search: q.search,
             searchLabel: config.searchLabel,
+            showSearch: config.searchable,
             onSearch: (text) => _go(q.copyWith(search: text)),
             activeFilterCount: q.activeFilterCount,
             initiallyOpen: q.activeFilterCount > 0,
@@ -181,14 +197,20 @@ class _SimpleListScreenState<T> extends State<SimpleListScreen<T>> {
                   sortAscending: field == q.sortField ? !q.sortAscending : true,
                 ),
               ),
-              onOpen: (item) => _open('${config.path}/${config.idOf(item)}'),
+              onOpen: config.openable
+                  ? (item) => _open('${config.path}/${config.idOf(item)}')
+                  : null,
               actions: (item) {
                 final id = config.idOf(item);
                 return buildRowActions(
                   context,
                   deleted: config.isDeleted(item),
                   name: config.nameOf(item),
-                  onEdit: () => _open('${config.path}/$id/edit'),
+                  onEdit: config.editable
+                      ? () => _open('${config.path}/$id/edit')
+                      : null,
+                  extra: config.extraActions?.call(context, item, notifier.load) ??
+                      const [],
                   onSoftDelete: () => _afterChange(() => notifier.softDelete(id)),
                   onHardDelete: () => _afterChange(() => notifier.hardDelete(id)),
                   onRestore: () => _afterChange(() => notifier.restore(id)),

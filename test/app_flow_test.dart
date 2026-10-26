@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:library_app/app.dart';
@@ -13,12 +11,72 @@ void _useLargeScreen(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('Пустая форма книги показывает ошибки у обязательных полей', (tester) async {
+  late FakeServer server;
+
+  setUp(() => server = FakeServer());
+
+  testWidgets('Список показывает загрузку, затем данные с сервера', (tester) async {
     _useLargeScreen(tester);
-    final repos = await makeRepositories();
+    server.delay = const Duration(milliseconds: 50);
 
     await tester.pumpWidget(
-      LibraryApp(repositories: repos, initialLocation: '/books/new'),
+      LibraryApp(repositories: makeRepositories(server), initialLocation: '/books'),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 5));
+    await tester.pump(const Duration(milliseconds: 5));
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('Идиот'), findsWidgets);
+  });
+
+  testWidgets('Недоступный сервер показывает ошибку, кнопка повтора загружает данные', (tester) async {
+    _useLargeScreen(tester);
+    server.down = true;
+
+    await tester.pumpWidget(
+      LibraryApp(repositories: makeRepositories(server), initialLocation: '/books'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Не удалось загрузить список'), findsOneWidget);
+    expect(find.text('Повторить'), findsOneWidget);
+
+    server.down = false;
+    await tester.tap(find.text('Повторить'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Повторить'), findsNothing);
+    expect(find.text('Идиот'), findsWidgets);
+  });
+
+  testWidgets('Пустой результат поиска показывает сообщение, а не ошибку', (tester) async {
+    _useLargeScreen(tester);
+
+    await tester.pumpWidget(
+      LibraryApp(
+        repositories: makeRepositories(server),
+        initialLocation: '/books?search=zzzzzz',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Книги не найдены'), findsOneWidget);
+    expect(find.text('Повторить'), findsNothing);
+  });
+
+  testWidgets('Пустая форма книги показывает ошибки у обязательных полей', (tester) async {
+    _useLargeScreen(tester);
+
+    await tester.pumpWidget(
+      LibraryApp(
+        repositories: makeRepositories(server),
+        initialLocation: '/books/new',
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -34,16 +92,37 @@ void main() {
     expect(find.text('Выберите хотя бы один жанр'), findsOneWidget);
   });
 
-  testWidgets('Удаление издательства с книгами отклоняется с указанием числа книг', (tester) async {
+  testWidgets('Ошибка 422 показывается под полем формы', (tester) async {
     _useLargeScreen(tester);
-    final repos = await makeRepositories();
 
     await tester.pumpWidget(
-      LibraryApp(repositories: repos, initialLocation: '/publishers'),
+      LibraryApp(
+        repositories: makeRepositories(server),
+        initialLocation: '/genres/new',
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Амфора'), findsWidgets);
+    await tester.enterText(find.widgetWithText(TextFormField, 'Название *'), 'Роман');
+    await tester.tap(find.text('Сохранить'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Такой жанр уже существует'), findsOneWidget);
+    expect(server.calls('POST', '/genres'), hasLength(1));
+  });
+
+  testWidgets('Удаление издательства с книгами отклоняется с указанием числа книг', (tester) async {
+    _useLargeScreen(tester);
+
+    await tester.pumpWidget(
+      LibraryApp(
+        repositories: makeRepositories(server),
+        initialLocation: '/publishers',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Азбука'), findsWidgets);
 
     await tester.tap(find.byIcon(Icons.delete_outline).first);
     await tester.pumpAndSettle();
@@ -52,34 +131,6 @@ void main() {
 
     expect(find.text('Действие невозможно'), findsOneWidget);
     expect(find.textContaining('у него есть книги'), findsOneWidget);
-  });
-
-  testWidgets('Повреждённые данные не ломают запуск, пользователь видит сообщение', (tester) async {
-    _useLargeScreen(tester);
-    final repos = await makeRepositories({'books_v2': 'не json'});
-
-    await tester.pumpWidget(LibraryApp(repositories: repos));
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull);
-    expect(find.textContaining('повреждены'), findsOneWidget);
-    expect(find.text('Книги'), findsWidgets);
-  });
-
-  testWidgets('Данные старого формата переносятся и показываются в списке', (tester) async {
-    _useLargeScreen(tester);
-    final repos = await makeRepositories({
-      'genres_v1': jsonEncode([
-        {'id': 1, 'name': 'Перенесённый жанр'},
-      ]),
-    });
-
-    await tester.pumpWidget(
-      LibraryApp(repositories: repos, initialLocation: '/genres'),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Перенесённый жанр'), findsWidgets);
-    expect(find.textContaining('перенесены'), findsOneWidget);
+    expect(server.calls('DELETE', '/publishers/1'), isEmpty);
   });
 }

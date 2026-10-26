@@ -18,11 +18,13 @@ class AuthorDetailScreen extends StatelessWidget {
       nameOf: (author) => author.fullName,
       isDeleted: (author) => author.isDeleted,
       fields: (context, author) => [
-        DetailField(label: 'Страна', child: Text(author.country)),
-        DetailField(label: 'Год рождения', child: Text('${author.birthYear}')),
         DetailField(
-          label: 'Биография',
-          child: Text(author.biography.isEmpty ? '—' : author.biography),
+          label: 'Страна',
+          child: Text(author.country.isEmpty ? '—' : author.country),
+        ),
+        DetailField(
+          label: 'Год рождения',
+          child: Text(author.birthYear == null ? '—' : '${author.birthYear}'),
         ),
       ],
     );

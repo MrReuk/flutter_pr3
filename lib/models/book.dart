@@ -23,20 +23,25 @@ class Book {
     required this.authorIds,
     required this.genreIds,
     required this.copiesTotal,
-    required this.copiesAvailable,
+    this.copiesAvailable = 0,
     this.deletedAt,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
+    final authors = json.containsKey('authors') ? json['authors'] : json['authorIds'];
+    final genres = json.containsKey('genres') ? json['genres'] : json['genreIds'];
+    final publisher =
+        json.containsKey('publisher') ? json['publisher'] : json['publisherId'];
+
     return Book(
       id: jsonInt(json['id']),
       title: jsonString(json['title']),
       isbn: jsonString(json['isbn']),
       year: jsonInt(json['year']),
       pages: jsonInt(json['pages']),
-      publisherId: jsonInt(json['publisherId']),
-      authorIds: jsonIntList(json['authorIds']),
-      genreIds: jsonIntList(json['genreIds']),
+      publisherId: jsonRefId(publisher) ?? 0,
+      authorIds: jsonRefIds(authors),
+      genreIds: jsonRefIds(genres),
       copiesTotal: jsonInt(json['copiesTotal']),
       copiesAvailable: jsonInt(json['copiesAvailable']),
       deletedAt: jsonDate(json['deletedAt']),
@@ -44,7 +49,6 @@ class Book {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'title': title,
         'isbn': isbn,
         'year': year,
@@ -53,8 +57,6 @@ class Book {
         'authorIds': authorIds,
         'genreIds': genreIds,
         'copiesTotal': copiesTotal,
-        'copiesAvailable': copiesAvailable,
-        'deletedAt': deletedAt?.toIso8601String(),
       };
 
   bool get isDeleted => deletedAt != null;

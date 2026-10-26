@@ -1,0 +1,58 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1 Остановить все процессы node",
+      "type": "shell",
+      "command": "taskkill /F /IM node.exe",
+      "problemMatcher": []
+    },
+    {
+      "label": "2 Раздача приложения, сервер недоступен (порт 8099)",
+      "type": "shell",
+      "command": "node tools/serve_build.js 5556 8099",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "3 Раздача приложения, сервер на 8080",
+      "type": "shell",
+      "command": "node tools/serve_build.js 5556 8080",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "4 Мок-сервер на 8080",
+      "type": "shell",
+      "command": "node ../api/mock-server.js --port 8080",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "5 Сборка приложения (сервер на 8081)",
+      "type": "shell",
+      "command": "flutter build web --release --dart-define=API_BASE_URL=http://localhost:8081/api",
+      "problemMatcher": []
+    },
+    {
+      "label": "6 Мок-сервер на 8081, неверный адрес страницы",
+      "type": "shell",
+      "command": "node ../api/mock-server.js --port 8081 --origin http://localhost:3000",
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "7 Мок-сервер на 8081, верный адрес страницы",
+      "type": "shell",
+      "command": "node ../api/mock-server.js --port 8081 --origin http://localhost:5556",
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "8 Загрузить данные ПР3 на 8081",
+      "type": "shell",
+      "command": "node tools/seed_old_data.js http://localhost:8081/api",
+      "problemMatcher": []
+    }
+  ]
+}

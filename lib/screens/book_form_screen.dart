@@ -25,6 +25,8 @@ class BookFormScreen extends StatelessWidget {
       backPath: '/books',
       notFoundMessage: 'Книга не найдена',
       savedMessage: id == null ? 'Книга добавлена' : 'Изменения сохранены',
+      needsRefs: true,
+      needsLinks: true,
       loadItem: id == null ? null : () => books.findById(id),
       initialValues: (book) => {
         'title': book?.title ?? '',
@@ -35,7 +37,6 @@ class BookFormScreen extends StatelessWidget {
         'authorIds': book?.authorIds ?? <int>[],
         'genreIds': book?.genreIds ?? <int>[],
         'copiesTotal': book == null ? '' : '${book.copiesTotal}',
-        'copiesAvailable': book == null ? '' : '${book.copiesAvailable}',
       },
       fields: (book) => [
         FieldSpec.text(
@@ -109,16 +110,6 @@ class BookFormScreen extends StatelessWidget {
           formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9-]'))],
           validator: checks([notBlank(), positiveInteger(max: 1000)]),
         ),
-        FieldSpec.text(
-          key: 'copiesAvailable',
-          label: 'Доступно экземпляров',
-          required: true,
-          keyboardType: TextInputType.number,
-          formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9-]'))],
-          validator: (value, values) =>
-              checks([notBlank(), nonNegativeInteger(max: 1000)])(value, values) ??
-              copiesAvailableCheck(value, values),
-        ),
       ],
       save: (values, existing) async {
         final draft = Book(
@@ -131,7 +122,6 @@ class BookFormScreen extends StatelessWidget {
           authorIds: List<int>.of(values['authorIds'] as List<int>),
           genreIds: List<int>.of(values['genreIds'] as List<int>),
           copiesTotal: int.parse((values['copiesTotal'] as String).trim()),
-          copiesAvailable: int.parse((values['copiesAvailable'] as String).trim()),
           deletedAt: existing?.deletedAt,
         );
         if (existing == null) {

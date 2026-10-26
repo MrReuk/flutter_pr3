@@ -1,4 +1,5 @@
 import '../models/genre.dart';
+import '../models/loan.dart';
 import '../models/page_result.dart';
 import '../models/publisher.dart';
 import '../models/reader.dart';
@@ -16,6 +17,20 @@ abstract interface class EntityRepository<T, Q> {
   Future<int> deleteMany(List<int> ids);
 }
 
+abstract interface class CachedRepository {
+  void invalidate();
+}
+
 typedef GenreRepository = EntityRepository<Genre, SimpleQuery>;
 typedef PublisherRepository = EntityRepository<Publisher, SimpleQuery>;
 typedef ReaderRepository = EntityRepository<Reader, SimpleQuery>;
+
+abstract interface class LoanRepository implements EntityRepository<Loan, SimpleQuery> {
+  Future<Loan> issue({
+    required int readerId,
+    required int bookId,
+    required int days,
+  });
+
+  Future<Loan> markReturned(int id);
+}

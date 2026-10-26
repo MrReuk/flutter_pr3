@@ -2,66 +2,50 @@ import 'json_helpers.dart';
 
 class Author {
   final int id;
-  final String firstName;
-  final String lastName;
+  final String fullName;
   final String country;
-  final int birthYear;
-  final String biography;
+  final int? birthYear;
   final DateTime? deletedAt;
 
   const Author({
     required this.id,
-    required this.firstName,
-    required this.lastName,
-    required this.country,
-    required this.birthYear,
-    required this.biography,
+    required this.fullName,
+    this.country = '',
+    this.birthYear,
     this.deletedAt,
   });
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
       id: jsonInt(json['id']),
-      firstName: jsonString(json['firstName']),
-      lastName: jsonString(json['lastName']),
+      fullName: jsonString(json['fullName']),
       country: jsonString(json['country']),
-      birthYear: jsonInt(json['birthYear']),
-      biography: jsonString(json['biography']),
+      birthYear: jsonIntOrNull(json['birthYear']),
       deletedAt: jsonDate(json['deletedAt']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'firstName': firstName,
-        'lastName': lastName,
+        'fullName': fullName,
         'country': country,
         'birthYear': birthYear,
-        'biography': biography,
-        'deletedAt': deletedAt?.toIso8601String(),
       };
 
   bool get isDeleted => deletedAt != null;
 
-  String get fullName => '$lastName $firstName';
-
   Author copyWith({
     int? id,
-    String? firstName,
-    String? lastName,
+    String? fullName,
     String? country,
     int? birthYear,
-    String? biography,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
     return Author(
       id: id ?? this.id,
-      firstName: firstName ?? this.firstName,
-      lastName: lastName ?? this.lastName,
+      fullName: fullName ?? this.fullName,
       country: country ?? this.country,
       birthYear: birthYear ?? this.birthYear,
-      biography: biography ?? this.biography,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }

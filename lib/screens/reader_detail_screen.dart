@@ -19,7 +19,7 @@ class ReaderDetailScreen extends StatelessWidget {
       nameOf: (reader) => reader.fullName,
       isDeleted: (reader) => reader.isDeleted,
       fields: (context, reader) {
-        final expired = reader.card.isExpiredAt(DateTime.now());
+        final card = reader.card;
         return [
           DetailField(label: 'Почта', child: Text(reader.email)),
           DetailField(
@@ -28,23 +28,33 @@ class ReaderDetailScreen extends StatelessWidget {
           ),
           DetailField(
             label: 'Читательский билет',
-            child: Card.outlined(
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(reader.card.number),
-                    const SizedBox(height: 4),
-                    Text('Выдан: ${formatRuDate(reader.card.issuedAt)}'),
-                    Text('Действует до: ${formatRuDate(reader.card.expiresAt)}'),
-                    const SizedBox(height: 8),
-                    Chip(label: Text(expired ? 'Срок действия истёк' : 'Действует')),
-                  ],
-                ),
-              ),
-            ),
+            child: card == null
+                ? const Text('Билет не оформлен')
+                : Card.outlined(
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(card.number),
+                          const SizedBox(height: 4),
+                          if (card.issuedAt != null)
+                            Text('Выдан: ${formatRuDate(card.issuedAt!)}'),
+                          if (card.expiresAt != null)
+                            Text('Действует до: ${formatRuDate(card.expiresAt!)}'),
+                          const SizedBox(height: 8),
+                          Chip(
+                            label: Text(
+                              card.isExpiredAt(DateTime.now())
+                                  ? 'Срок действия истёк'
+                                  : 'Действует',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         ];
       },

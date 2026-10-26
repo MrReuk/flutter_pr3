@@ -22,6 +22,8 @@ import 'screens/book_list_screen.dart';
 import 'screens/genre_detail_screen.dart';
 import 'screens/genre_form_screen.dart';
 import 'screens/genre_list_screen.dart';
+import 'screens/loan_form_screen.dart';
+import 'screens/loan_list_screen.dart';
 import 'screens/not_found_screen.dart';
 import 'screens/publisher_detail_screen.dart';
 import 'screens/publisher_form_screen.dart';
@@ -134,12 +136,28 @@ GoRouter buildRouter({String initialLocation = '/books'}) {
           query: SimpleQuery.fromParams(
             state.uri.queryParameters,
             sortFields: kReaderSortFields,
-            defaultSort: 'lastName',
+            defaultSort: 'fullName',
           ),
         ),
         form: (id) => ReaderFormScreen(readerId: id),
         detail: const ReaderDetailScreen(),
         finder: (context) => context.read<ReaderRepository>().findById,
+      ),
+      GoRoute(
+        path: '/loans',
+        builder: (context, state) => LoanListScreen(
+          query: SimpleQuery.fromParams(
+            state.uri.queryParameters,
+            sortFields: kLoanSortFields,
+            defaultSort: 'issuedAt',
+          ),
+        ),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const LoanFormScreen(),
+          ),
+        ],
       ),
     ],
     errorBuilder: (context, state) => NotFoundScreen(location: state.uri.toString()),

@@ -6,7 +6,8 @@ List<Widget> buildRowActions(
   BuildContext context, {
   required bool deleted,
   required String name,
-  required VoidCallback onEdit,
+  VoidCallback? onEdit,
+  List<Widget> extra = const [],
   required Future<String?> Function() onSoftDelete,
   required Future<String?> Function() onHardDelete,
   required Future<String?> Function() onRestore,
@@ -18,11 +19,13 @@ List<Widget> buildRowActions(
   }
 
   return [
-    IconButton(
-      tooltip: 'Изменить',
-      icon: const Icon(Icons.edit_outlined),
-      onPressed: onEdit,
-    ),
+    ...extra,
+    if (onEdit != null)
+      IconButton(
+        tooltip: 'Изменить',
+        icon: const Icon(Icons.edit_outlined),
+        onPressed: onEdit,
+      ),
     if (deleted)
       IconButton(
         tooltip: 'Восстановить',

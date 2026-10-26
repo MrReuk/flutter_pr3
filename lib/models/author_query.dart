@@ -2,7 +2,7 @@ import 'page_result.dart';
 import 'query_params.dart';
 
 class AuthorQuery {
-  static const List<String> sortFields = ['lastName', 'country', 'birthYear'];
+  static const List<String> sortFields = ['fullName', 'country', 'birthYear'];
 
   final String search;
   final String sortField;
@@ -13,7 +13,7 @@ class AuthorQuery {
 
   const AuthorQuery({
     this.search = '',
-    this.sortField = 'lastName',
+    this.sortField = 'fullName',
     this.sortAscending = true,
     this.page = 1,
     this.size = kDefaultPageSize,
@@ -21,7 +21,7 @@ class AuthorQuery {
   });
 
   factory AuthorQuery.fromParams(Map<String, String> params) {
-    final sort = parseSortParam(params['sort'], sortFields, 'lastName');
+    final sort = parseSortParam(params['sort'], sortFields, 'fullName');
     return AuthorQuery(
       search: params['search'] ?? '',
       sortField: sort.field,
@@ -37,7 +37,7 @@ class AuthorQuery {
   Map<String, String> toParams() {
     return {
       if (search.isNotEmpty) 'search': search,
-      if (sortField != 'lastName' || !sortAscending)
+      if (sortField != 'fullName' || !sortAscending)
         'sort': formatSortParam(sortField, sortAscending),
       if (page > 1) 'page': '$page',
       if (size != kDefaultPageSize) 'size': '$size',

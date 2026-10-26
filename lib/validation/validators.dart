@@ -39,13 +39,13 @@ FieldCheck maxLength(int max) {
 }
 
 FieldCheck namePattern() {
-  final pattern = RegExp(r"^[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\s\-']*$");
+  final pattern = RegExp(r"^[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\s\-'.]*$");
   return (value) {
     final text = value.trim();
     if (text.isEmpty) return null;
     return pattern.hasMatch(text)
         ? null
-        : 'Допустимы только буквы, пробел и дефис';
+        : 'Допустимы только буквы, пробел, точка и дефис';
   };
 }
 
@@ -119,23 +119,6 @@ FieldCheck phoneFormat() {
   };
 }
 
-FieldCheck cardNumberFormat() {
-  final pattern = RegExp(r'^LC-\d{4}-\d{3}$');
-  return (value) {
-    final text = value.trim();
-    if (text.isEmpty) return null;
-    return pattern.hasMatch(text) ? null : 'Формат номера: LC-2025-001';
-  };
-}
-
-FieldCheck dateFormat() {
-  return (value) {
-    final text = value.trim();
-    if (text.isEmpty) return null;
-    return parseRuDate(text) == null ? 'Введите дату в формате дд.мм.гггг' : null;
-  };
-}
-
 DateTime? parseRuDate(String text) {
   final match = RegExp(r'^(\d{2})\.(\d{2})\.(\d{4})$').firstMatch(text.trim());
   if (match == null) return null;
@@ -151,20 +134,6 @@ String formatRuDate(DateTime date) {
   final day = date.day.toString().padLeft(2, '0');
   final month = date.month.toString().padLeft(2, '0');
   return '$day.$month.${date.year}';
-}
-
-String? copiesAvailableCheck(String value, Map<String, Object?> values) {
-  final available = int.tryParse(value.trim());
-  final total = int.tryParse('${values['copiesTotal'] ?? ''}'.trim());
-  if (available == null || total == null) return null;
-  return available > total ? 'Не может быть больше общего числа экземпляров' : null;
-}
-
-String? expiryAfterIssueCheck(String value, Map<String, Object?> values) {
-  final expires = parseRuDate(value);
-  final issued = parseRuDate('${values['cardIssuedAt'] ?? ''}');
-  if (expires == null || issued == null) return null;
-  return expires.isAfter(issued) ? null : 'Срок действия должен заканчиваться позже даты выдачи';
 }
 
 String? Function(int?) mustChoose(String message) {

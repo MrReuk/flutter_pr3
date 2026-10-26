@@ -134,5 +134,6 @@ class SimpleQuery {
 }
 
 const List<String> kGenreSortFields = ['name'];
-const List<String> kPublisherSortFields = ['name', 'foundedYear', 'country'];
-const List<String> kReaderSortFields = ['lastName', 'email', 'expiresAt'];
+const List<String> kPublisherSortFields = ['name', 'city', 'foundedYear'];
+const List<String> kReaderSortFields = ['fullName', 'email'];
+const List<String> kLoanSortFields = ['issuedAt', 'dueAt', 'returnedAt'];

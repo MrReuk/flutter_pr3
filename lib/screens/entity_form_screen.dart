@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../core/api_exceptions.dart';
 import '../repositories/repository_exception.dart';
 import '../state/paged_list_notifier.dart';
 import '../state/reference_notifier.dart';
@@ -22,6 +23,8 @@ class EntityFormScreen<T> extends StatefulWidget {
     required this.fields,
     required this.initialValues,
     required this.save,
+    this.needsRefs = false,
+    this.needsLinks = false,
   });
 
   final String title;
@@ -32,6 +35,8 @@ class EntityFormScreen<T> extends StatefulWidget {
   final List<FieldSpec> Function(T? item) fields;
   final FormValues Function(T? item) initialValues;
   final Future<void> Function(FormValues values, T? existing) save;
+  final bool needsRefs;
+  final bool needsLinks;
 
   @override
   State<EntityFormScreen<T>> createState() => _EntityFormScreenState<T>();
@@ -49,7 +54,11 @@ class _EntityFormScreenState<T> extends State<EntityFormScreen<T>> {
   }
 
   Future<T?> _prepare() async {
-    await context.read<ReferenceNotifier>().load();
+    if (widget.needsRefs) {
+      final refs = context.read<ReferenceNotifier>();
+      await refs.load(withLinks: widget.needsLinks);
+      if (refs.failed) throw RepositoryException(refs.error ?? 'Справочники не загружены');
+    }
     final loader = widget.loadItem;
     return loader == null ? null : await loader();
   }
@@ -74,8 +83,18 @@ class _EntityFormScreenState<T> extends State<EntityFormScreen<T>> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await widget.save(values, existing);
-    } on FieldConflictException catch (e) {
+    } on ValidationException catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Сервер отклонил данные. Проверьте выделенные поля.'),
+        ),
+      );
       return e.errors;
+    } on ConflictException catch (e) {
+      if (mounted) {
+        await showNotice(context, title: 'Действие невозможно', message: e.message);
+      }
+      return const {};
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(content: Text('Не удалось сохранить: ${describeError(e)}')),

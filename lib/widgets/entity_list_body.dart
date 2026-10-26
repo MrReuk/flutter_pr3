@@ -24,12 +24,12 @@ class EntityListBody<T> extends StatelessWidget {
     required this.sortField,
     required this.sortAscending,
     required this.onSort,
-    required this.onOpen,
     required this.actions,
     required this.titleOf,
     required this.subtitleOf,
     required this.onPage,
     required this.onSize,
+    this.onOpen,
   });
 
   final LoadStatus status;
@@ -47,7 +47,7 @@ class EntityListBody<T> extends StatelessWidget {
   final String sortField;
   final bool sortAscending;
   final void Function(String field) onSort;
-  final void Function(T item) onOpen;
+  final void Function(T item)? onOpen;
   final List<Widget> Function(T item) actions;
   final String Function(T item) titleOf;
   final String Function(T item) subtitleOf;
@@ -63,6 +63,13 @@ class EntityListBody<T> extends StatelessWidget {
     }
     if (!hasData && status != LoadStatus.success) {
       return const LoadingView();
+    }
+    if (!hasData && result.total > 0) {
+      return EmptyView(
+        message: 'На этой странице нет записей.',
+        actionLabel: 'К первой странице',
+        onAction: () => onPage(1),
+      );
     }
     if (!hasData) {
       return EmptyView(message: emptyMessage, onAction: onReset);
@@ -125,10 +132,10 @@ class _CardList<T> extends StatelessWidget {
     required this.sortField,
     required this.sortAscending,
     required this.onSort,
-    required this.onOpen,
     required this.actions,
     required this.titleOf,
     required this.subtitleOf,
+    this.onOpen,
   });
 
   final List<T> items;
@@ -140,7 +147,7 @@ class _CardList<T> extends StatelessWidget {
   final String sortField;
   final bool sortAscending;
   final void Function(String field) onSort;
-  final void Function(T item) onOpen;
+  final void Function(T item)? onOpen;
   final List<Widget> Function(T item) actions;
   final String Function(T item) titleOf;
   final String Function(T item) subtitleOf;
@@ -195,7 +202,7 @@ class _CardList<T> extends StatelessWidget {
               final deleted = isDeleted(item);
               return Card(
                 child: InkWell(
-                  onTap: () => onOpen(item),
+                  onTap: onOpen == null ? null : () => onOpen!(item),
                   child: Row(
                     children: [
                       Checkbox(

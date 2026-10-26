@@ -9,10 +9,12 @@ import 'package:library_app/state/paged_list_notifier.dart';
 import 'test_helpers.dart';
 
 void main() {
+  late FakeServer server;
   late PagedListNotifier<Book, BookQuery> notifier;
 
-  setUp(() async {
-    final repos = await makeRepositories();
+  setUp(() {
+    server = FakeServer();
+    final repos = makeRepositories(server);
     notifier = PagedListNotifier<Book, BookQuery>(
       initialQuery: const BookQuery(),
       repository: repos.books,
@@ -41,11 +43,18 @@ void main() {
     expect(notifier.error, isNull);
   });
 
-  test('Сбой репозитория переводит состояние в ошибку', () async {
-    await notifier.applyQuery(const BookQuery(search: '!error'), force: true);
+  test('Недоступный сервер переводит состояние в ошибку, повтор после запуска сервера загружает данные', () async {
+    server.down = true;
+    await notifier.applyQuery(const BookQuery(), force: true);
 
     expect(notifier.status, LoadStatus.error);
-    expect(notifier.error, isNotNull);
+    expect(notifier.error, contains('Не удалось загрузить список'));
+
+    server.down = false;
+    await notifier.load();
+
+    expect(notifier.status, LoadStatus.success);
+    expect(notifier.result.items, isNotEmpty);
   });
 
   test('Выделение сбрасывается при смене условий отбора', () async {
@@ -68,8 +77,20 @@ void main() {
 
     expect(summary.requested, 2);
     expect(summary.deleted, 2);
+    expect(summary.error, isNull);
     expect(notifier.hasSelection, isFalse);
     expect(notifier.result.total, before - 2);
+  });
+
+  test('Сбой множественного удаления возвращает сообщение', () async {
+    await notifier.applyQuery(const BookQuery(), force: true);
+    notifier.toggleSelection(1);
+    server.down = true;
+
+    final summary = await notifier.deleteSelected();
+
+    expect(summary.deleted, 0);
+    expect(summary.error, isNotNull);
   });
 
   test('Выделение всей страницы выбирает все видимые записи', () async {
@@ -83,23 +104,33 @@ void main() {
   });
 
   test('Отказ в удалении возвращает сообщение и не ломает список', () async {
-    final repos = await makeRepositories();
     final publishers = PagedListNotifier<Publisher, SimpleQuery>(
       initialQuery: SimpleQuery.initial(
         sortFields: kPublisherSortFields,
         defaultSort: 'name',
       ),
-      repository: repos.publishers,
+      repository: makeRepositories(server).publishers,
       idOf: (publisher) => publisher.id,
     );
     addTearDown(publishers.dispose);
 
     await publishers.load();
-    final problem = await publishers.softDelete(4);
+    final problem = await publishers.softDelete(1);
 
     expect(problem, isNotNull);
     expect(problem, contains('есть книги'));
     expect(publishers.status, LoadStatus.success);
-    expect(publishers.result.items.any((p) => p.id == 4), isTrue);
+    expect(publishers.result.items.any((p) => p.id == 1), isTrue);
+  });
+
+  test('Ответ на устаревший запрос не заменяет результат нового', () async {
+    server.delay = const Duration(milliseconds: 30);
+
+    final stale = notifier.applyQuery(const BookQuery(search: 'идиот'), force: true);
+    final fresh = notifier.applyQuery(const BookQuery(search: 'двор'), force: true);
+    await Future.wait([stale, fresh]);
+
+    expect(notifier.status, LoadStatus.success);
+    expect(notifier.result.items.single.title, 'Скотный двор');
   });
 }

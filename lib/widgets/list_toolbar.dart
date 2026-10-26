@@ -14,6 +14,7 @@ class ListToolbar extends StatefulWidget {
     this.initiallyOpen = false,
     this.onAdd,
     this.addLabel = 'Добавить',
+    this.showSearch = true,
   });
 
   final String search;
@@ -25,6 +26,7 @@ class ListToolbar extends StatefulWidget {
   final bool initiallyOpen;
   final VoidCallback? onAdd;
   final String addLabel;
+  final bool showSearch;
 
   @override
   State<ListToolbar> createState() => _ListToolbarState();
@@ -55,19 +57,22 @@ class _ListToolbarState extends State<ListToolbar> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: DebouncedTextField(
-                  value: widget.search,
-                  onChanged: widget.onSearch,
-                  decoration: InputDecoration(
-                    labelText: widget.searchLabel,
-                    prefixIcon: const Icon(Icons.search),
-                    border: const OutlineInputBorder(),
-                    isDense: true,
+              if (widget.showSearch) ...[
+                Expanded(
+                  child: DebouncedTextField(
+                    value: widget.search,
+                    onChanged: widget.onSearch,
+                    decoration: InputDecoration(
+                      labelText: widget.searchLabel,
+                      prefixIcon: const Icon(Icons.search),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
+              ] else
+                const Spacer(),
               OutlinedButton.icon(
                 onPressed: () => setState(() => _open = !_open),
                 icon: Icon(_open ? Icons.expand_less : Icons.tune),

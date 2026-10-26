@@ -61,6 +61,7 @@ const List<_NavItem> _items = [
   (icon: Icons.category, label: 'Жанры', path: '/genres'),
   (icon: Icons.apartment, label: 'Издательства', path: '/publishers'),
   (icon: Icons.badge, label: 'Читатели', path: '/readers'),
+  (icon: Icons.assignment, label: 'Выдачи', path: '/loans'),
 ];
 
 class _NavButton extends StatelessWidget {

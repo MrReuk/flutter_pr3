@@ -1,9 +1,15 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/author.dart';
+import '../models/book.dart';
+import '../models/genre.dart';
 import '../models/named_option.dart';
+import '../models/publisher.dart';
+import '../models/reader.dart';
 import '../repositories/author_repository.dart';
 import '../repositories/book_repository.dart';
 import '../repositories/entity_repository.dart';
+import 'paged_list_notifier.dart';
 
 const String kDeletedSuffix = ' (удалено)';
 
@@ -13,31 +19,38 @@ class ReferenceNotifier extends ChangeNotifier {
     required PublisherRepository publishers,
     required AuthorRepository authors,
     required BookRepository books,
+    required ReaderRepository readers,
   })  : _genres = genres,
         _publishers = publishers,
         _authors = authors,
-        _books = books;
+        _books = books,
+        _readers = readers;
 
   final GenreRepository _genres;
   final PublisherRepository _publishers;
   final AuthorRepository _authors;
   final BookRepository _books;
+  final ReaderRepository _readers;
 
   Map<int, String> _genreNames = const {};
   Map<int, String> _publisherNames = const {};
   Map<int, String> _authorNames = const {};
+  Map<int, String> _readerNames = const {};
+  Map<int, ({String title, int free})> _bookInfo = const {};
   Set<int> _deletedGenres = const {};
   Set<int> _deletedPublishers = const {};
   Set<int> _deletedAuthors = const {};
+  Set<int> _deletedReaders = const {};
+  Set<int> _deletedBooks = const {};
   Map<int, Set<int>> _authorsByPublisher = const {};
-  List<String> _countries = const [];
   bool _ready = false;
   bool _failed = false;
+  String? _error;
   bool _disposed = false;
 
   bool get ready => _ready;
   bool get failed => _failed;
-  List<String> get countries => _countries;
+  String? get error => _error;
 
   String genreName(int id) => _label(_genreNames, _deletedGenres, id, '—');
   String publisherName(int id) =>
@@ -57,6 +70,17 @@ class ReferenceNotifier extends ChangeNotifier {
   List<NamedOption> authorOptions({Iterable<int> keep = const []}) =>
       _options(_authorNames, _deletedAuthors, keep);
 
+  List<NamedOption> readerOptions({Iterable<int> keep = const []}) =>
+      _options(_readerNames, _deletedReaders, keep);
+
+  List<NamedOption> bookOptions({Iterable<int> keep = const []}) {
+    final titles = {
+      for (final entry in _bookInfo.entries)
+        entry.key: '${entry.value.title} (свободно: ${entry.value.free})',
+    };
+    return _options(titles, _deletedBooks, keep);
+  }
+
   List<NamedOption> authorOptionsForPublisher(
     int? publisherId, {
     Iterable<int> keep = const [],
@@ -68,12 +92,16 @@ class ReferenceNotifier extends ChangeNotifier {
         .toList();
   }
 
-  Future<void> load() async {
+  Future<void> load({bool withLinks = false}) async {
     try {
-      final genres = await _genres.findAll();
-      final publishers = await _publishers.findAll();
-      final authors = await _authors.findAll();
-      final books = await _books.findAll();
+      final base = await Future.wait<Object?>([
+        _genres.findAll(),
+        _publishers.findAll(),
+        _authors.findAll(),
+      ]);
+      final genres = base[0] as List<Genre>;
+      final publishers = base[1] as List<Publisher>;
+      final authors = base[2] as List<Author>;
 
       _genreNames = {for (final g in genres) g.id: g.name};
       _publisherNames = {for (final p in publishers) p.id: p.name};
@@ -82,24 +110,36 @@ class ReferenceNotifier extends ChangeNotifier {
       _deletedPublishers = {for (final p in publishers) if (p.isDeleted) p.id};
       _deletedAuthors = {for (final a in authors) if (a.isDeleted) a.id};
 
-      final byPublisher = <int, Set<int>>{};
-      for (final book in books) {
-        if (book.isDeleted) continue;
-        byPublisher.putIfAbsent(book.publisherId, () => <int>{}).addAll(book.authorIds);
-      }
-      _authorsByPublisher = byPublisher;
+      if (withLinks) {
+        final links = await Future.wait<Object?>([
+          _books.findAll(),
+          _readers.findAll(),
+        ]);
+        final books = links[0] as List<Book>;
+        final readers = links[1] as List<Reader>;
 
-      final countries = <String>{
-        for (final p in publishers)
-          if (!p.isDeleted && p.country.trim().isNotEmpty) p.country,
-      }.toList()
-        ..sort();
-      _countries = countries;
+        final byPublisher = <int, Set<int>>{};
+        for (final book in books) {
+          if (book.isDeleted) continue;
+          byPublisher
+              .putIfAbsent(book.publisherId, () => <int>{})
+              .addAll(book.authorIds);
+        }
+        _authorsByPublisher = byPublisher;
+        _bookInfo = {
+          for (final b in books) b.id: (title: b.title, free: b.copiesAvailable),
+        };
+        _deletedBooks = {for (final b in books) if (b.isDeleted) b.id};
+        _readerNames = {for (final r in readers) r.id: r.fullName};
+        _deletedReaders = {for (final r in readers) if (r.isDeleted) r.id};
+      }
 
       _failed = false;
+      _error = null;
       _ready = true;
-    } catch (_) {
+    } catch (e) {
       _failed = true;
+      _error = describeError(e);
     }
     notifyListeners();
   }

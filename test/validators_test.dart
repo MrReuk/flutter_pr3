@@ -64,40 +64,21 @@ void main() {
     expect(check('+7 900 123-45-67'), isNull);
   });
 
-  test('Имена: только буквы, пробел и дефис', () {
+  test('Имена: только буквы, пробел, точка и дефис', () {
     final check = namePattern();
     expect(check('Иван1'), isNotNull);
     expect(check('-Иван'), isNotNull);
     expect(check('Анна-Мария'), isNull);
     expect(check("O'Brien"), isNull);
-  });
-
-  test('Номер читательского билета', () {
-    final check = cardNumberFormat();
-    expect(check('LC-25-1'), isNotNull);
-    expect(check('lc-2025-001'), isNotNull);
-    expect(check('LC-2025-001'), isNull);
+    expect(check('Толстой Л. Н.'), isNull);
   });
 
   test('Дата в формате дд.мм.гггг и несуществующие даты', () {
-    expect(dateFormat()('2025-01-01'), isNotNull);
-    expect(dateFormat()('31.02.2025'), isNotNull);
-    expect(dateFormat()('29.02.2024'), isNull);
+    expect(parseRuDate('2025-01-01'), isNull);
+    expect(parseRuDate('31.02.2025'), isNull);
+    expect(parseRuDate('29.02.2024'), DateTime(2024, 2, 29));
     expect(parseRuDate('05.03.2025'), DateTime(2025, 3, 5));
     expect(formatRuDate(DateTime(2025, 3, 5)), '05.03.2025');
-  });
-
-  test('Доступных экземпляров не больше общего числа', () {
-    expect(copiesAvailableCheck('5', {'copiesTotal': '3'}), isNotNull);
-    expect(copiesAvailableCheck('3', {'copiesTotal': '3'}), isNull);
-    expect(copiesAvailableCheck('3', {'copiesTotal': ''}), isNull);
-  });
-
-  test('Срок действия билета позже даты выдачи', () {
-    final values = {'cardIssuedAt': '01.01.2025'};
-    expect(expiryAfterIssueCheck('01.01.2025', values), isNotNull);
-    expect(expiryAfterIssueCheck('01.01.2024', values), isNotNull);
-    expect(expiryAfterIssueCheck('01.01.2026', values), isNull);
   });
 
   test('Составная проверка возвращает первую найденную ошибку', () {
